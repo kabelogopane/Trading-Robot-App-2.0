@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trading Robot App 2.0</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">RESEARCH / PAPER SIMULATION</p>
+      <h1>Trading Robot App 2.0</h1>
+      <p>45-minute time-anchor model with ICT/SMC concepts used as supporting measurements.</p>
+    </div>
+    <div class="status" id="status">Checking system...</div>
+  </header>
+
+  <main>
+    <section class="principle">
+      <strong>Core principle:</strong> Time decides WHEN to analyze. Price decides WHAT to do. Liquidity decides WHERE to study the reaction.
+    </section>
+
+    <section class="cards" id="summaryCards">
+      <article><span>Trades</span><strong id="trades">—</strong></article>
+      <article><span>Win rate</span><strong id="winRate">—</strong></article>
+      <article><span>Net R</span><strong id="netR">—</strong></article>
+      <article><span>Max drawdown</span><strong id="drawdown">—</strong></article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <h2>45-minute model</h2>
+          <p>New York time • primary anchor at 09:45</p>
+        </div>
+        <button id="runButton">Run paper backtest</button>
+      </div>
+      <div class="timeline">
+        <div><b>09:45</b><span>Anchor</span></div>
+        <div><b>10:30</b><span>Window 1 ends</span></div>
+        <div><b>11:15</b><span>Window 2 ends</span></div>
+        <div><b>12:00</b><span>Window 3 ends</span></div>
+        <div><b>12:45</b><span>Window 4 ends</span></div>
+        <div><b>13:30</b><span>Window 5 ends</span></div>
+        <div><b>14:15</b><span>Window 6 ends</span></div>
+        <div><b>15:00</b><span>Window 7 ends</span></div>
+        <div><b>15:45</b><span>Window 8 ends</span></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Trade journal</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th><th>Window</th><th>Direction</th><th>Entry</th>
+              <th>Stop</th><th>Target</th><th>Outcome</th><th>R</th>
+            </tr>
+          </thead>
+          <tbody id="tradeBody">
+            <tr><td colspan="8">Run the paper backtest to load trades.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="disclaimer">
+      <strong>Important:</strong> This application is for research and paper-simulation education only. It does not guarantee profitable trading and does not place real-money trades.
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
