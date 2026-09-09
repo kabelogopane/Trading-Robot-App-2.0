@@ -1,5 +1,7 @@
 """Backtest-engine safety and no-look-ahead tests."""
 
+from datetime import datetime, timedelta
+
 from backtest.engine import BacktestConfig, run_backtest
 
 
@@ -18,14 +20,12 @@ def test_empty_backtest_returns_no_trades():
 
 
 def test_backtest_does_not_enter_before_anchor_window_closes():
+    start = datetime.fromisoformat("2026-08-03T09:45:00-04:00")
     bars = []
-    for minute in range(0, 45, 3):
-        bars.append(
-            make_bar(
-                f"2026-08-03T09:{45 + minute:02d}:00-04:00",
-                100, 105, 99, 104,
-            )
-        )
+    for step in range(15):
+        ts = start + timedelta(minutes=3 * step)
+        bars.append(make_bar(ts.isoformat(), 100, 105, 99, 104))
+
     # This test mainly checks that the engine handles a session with only the
     # anchor window and produces no premature setup.
     assert run_backtest(bars) == []
