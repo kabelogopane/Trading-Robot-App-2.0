@@ -59,10 +59,6 @@ def _timestamp(bar: Any) -> datetime:
     return ensure_new_york(value)
 
 
-def _session_date(bar: Any) -> str:
-    return _timestamp(bar).date().isoformat()
-
-
 def _check_exit(
     trade: dict[str, Any],
     bar: Any,
@@ -82,9 +78,7 @@ def _check_exit(
         hit_target = low <= target
 
     if hit_stop and hit_target:
-        if stop_first:
-            return "loss", stop
-        return "win", target
+        return ("loss", stop) if stop_first else ("win", target)
     if hit_stop:
         return "loss", stop
     if hit_target:
@@ -112,20 +106,22 @@ def run_backtest(
     current_session: str | None = None
     session_bars: list[Any] = []
     anchor_bars: list[Any] = []
+    last_session_bar: Any | None = None
 
     for bar in ordered:
         ts = _timestamp(bar)
         session = ts.date().isoformat()
 
         if current_session != session:
-            if active is not None:
+            if active is not None and last_session_bar is not None:
                 results.append(
-                    _close_at_last_bar(active, ordered, results, reason="session_end")
+                    _close_at_bar(active, last_session_bar, reason="session_end")
                 )
                 active = None
             current_session = session
             session_bars = []
             anchor_bars = []
+            last_session_bar = None
 
         # Manage an already-open hypothetical trade before considering a new one.
         if active is not None:
@@ -136,6 +132,7 @@ def run_backtest(
                 active = None
 
         session_bars.append(bar)
+        last_session_bar = bar
 
         # The 09:45 anchor is the first 45-minute window. We collect bars that
         # belong to it and only qualify setups after an anchor window is complete.
@@ -149,12 +146,12 @@ def run_backtest(
             continue
         if ts < anchor_window.end:
             continue
+        if not anchor_bars:
+            continue
 
         # Use only information through the current bar; no future bars are read.
         history = session_bars[:-1]
         if len(history) < max(cfg.swing_lookback * 2 + 1, 5):
-            continue
-        if not anchor_bars:
             continue
 
         anchor_high = max(_value(b, "high") for b in anchor_bars)
@@ -173,7 +170,11 @@ def run_backtest(
         low_swept = liquidity.prior_low is not None and swept_low(bar, liquidity.prior_low)
 
         direction = displacement.direction
-        liquidity_swept = high_swept if direction == "bearish" else low_swept if direction == "bullish" else False
+        liquidity_swept = (
+            high_swept if direction == "bearish"
+            else low_swept if direction == "bullish"
+            else False
+        )
 
         signal = qualify_entry(
             direction=direction,
@@ -189,9 +190,10 @@ def run_backtest(
             continue
 
         levels = calculate_levels(signal.entry, signal.invalidation, cfg.risk_reward)
+        window = window_for_timestamp(ts)
         active = {
             "session_date": session,
-            "window": str(window_for_timestamp(ts)) if window_for_timestamp(ts) else "post_anchor",
+            "window": str(window) if window else "post_anchor",
             "direction": signal.direction,
             "entry_time_dt": ts,
             "entry_time": ts.isoformat(),
@@ -201,13 +203,18 @@ def run_backtest(
             "reason": signal.reason,
         }
 
-    if active is not None:
-        results.append(_close_at_last_bar(active, ordered, results, reason="end_of_data"))
+    if active is not None and last_session_bar is not None:
+        results.append(_close_at_bar(active, last_session_bar, reason="end_of_data"))
 
     return results
 
 
-def _finish_trade(active: dict[str, Any], bar: Any, outcome: str, exit_price: float) -> TradeResult:
+def _finish_trade(
+    active: dict[str, Any],
+    bar: Any,
+    outcome: str,
+    exit_price: float,
+) -> TradeResult:
     direction = active["direction"]
     r = r_multiple(direction, active["entry"], exit_price, active["stop"])
     ts = _timestamp(bar)
@@ -227,16 +234,15 @@ def _finish_trade(active: dict[str, Any], bar: Any, outcome: str, exit_price: fl
     )
 
 
-def _close_at_last_bar(
+def _close_at_bar(
     active: dict[str, Any],
-    ordered: list[Any],
-    results: list[TradeResult],
+    bar: Any,
     reason: str,
 ) -> TradeResult:
-    last = ordered[-1]
-    price = _value(last, "close")
+    price = _value(bar, "close")
     direction = active["direction"]
     r = r_multiple(direction, active["entry"], price, active["stop"])
+    ts = _timestamp(bar)
     return TradeResult(
         session_date=active["session_date"],
         window=active["window"],
@@ -245,7 +251,7 @@ def _close_at_last_bar(
         entry=active["entry"],
         stop=active["stop"],
         target=active["target"],
-        exit_time=_timestamp(last).isoformat(),
+        exit_time=ts.isoformat(),
         exit_price=price,
         outcome="open_at_data_end",
         r_multiple=r,
