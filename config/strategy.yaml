@@ -1,0 +1,62 @@
+# Trading Robot App 2.0 strategy configuration
+# Research / paper-simulation only. No live order execution.
+
+project:
+  name: "Trading Robot App 2.0"
+  timezone: "America/New_York"
+  execution_mode: "paper_simulation"
+
+model:
+  anchor_time: "09:45"
+  window_minutes: 45
+  boundary_rule: "[start,end)"
+  primary_anchor: "09:45"
+
+observation_times:
+  - "08:45"
+  - "09:45"
+  - "10:45"
+  - "11:45"
+  - "12:45"
+  - "13:45"
+  - "15:45"
+
+windows:
+  - ["09:45", "10:30"]
+  - ["10:30", "11:15"]
+  - ["11:15", "12:00"]
+  - ["12:00", "12:45"]
+  - ["12:45", "13:30"]
+  - ["13:30", "14:15"]
+  - ["14:15", "15:00"]
+  - ["15:00", "15:45"]
+
+supporting_measurements:
+  liquidity: true
+  market_structure: true
+  displacement: true
+  fair_value_gap: true
+  order_block: true
+  breaker: true
+  premium_discount: true
+
+entry:
+  require_objective_confirmation: true
+  allow_automatic_direction_at_anchor: false
+
+risk:
+  risk_percent: 1.0
+  default_account_size: 10000
+  simulated_only: true
+
+realtime:
+  provider: "alpaca"
+  mode: "delayed_or_live_feed"
+  timeframe: "1m"
+  api_key_env: "ALPACA_API_KEY"
+  api_secret_env: "ALPACA_API_SECRET"
+  data_feed_env: "ALPACA_DATA_FEED"
+
+backtest:
+  conservative_same_bar_rule: "stop_first"
+  output_r_multiple: true
