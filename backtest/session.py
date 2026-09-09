@@ -35,7 +35,7 @@ def assign_windows(bars: Iterable[Any], day: date) -> dict[str, list[Any]]:
     windows = build_45m_windows(day)
     result = {str(window): [] for window in windows}
     for bar in bars:
-        window = window_for_timestamp(_bar_timestamp(bar), day)
+        window = window_for_timestamp(_bar_timestamp(bar))
         if window is not None and str(window) in result:
             result[str(window)].append(bar)
     return result
