@@ -1,0 +1,20 @@
+//@version=6
+indicator("Time-Based Trading Model", overlay=true, max_labels_count=100)
+
+// Research / paper simulation only.
+// This script visualizes the 45-minute time model and does not place trades.
+
+string TZ = "America/New_York"
+
+isTime(h, m) =>
+    hour(time, TZ) == h and minute(time, TZ) == m
+
+isAnchor = isTime(9, 45)
+isObservation = isTime(8, 45) or isTime(9, 45) or isTime(10, 45) or isTime(11, 45) or isTime(12, 45) or isTime(13, 45) or isTime(15, 45)
+
+plotshape(isAnchor, title="09:45 Anchor", style=shape.labelup, location=location.belowbar, text="09:45")
+plotshape(isObservation and not isAnchor, title="Observation Time", style=shape.circle, location=location.abovebar, size=size.tiny)
+
+// Mark the start of each 45-minute window after the 09:45 anchor.
+windowStart = isTime(9, 45) or isTime(10, 30) or isTime(11, 15) or isTime(12, 0) or isTime(12, 45) or isTime(13, 30) or isTime(14, 15) or isTime(15, 0)
+plotshape(windowStart, title="45m Window Start", style=shape.triangleup, location=location.belowbar, size=size.tiny)
