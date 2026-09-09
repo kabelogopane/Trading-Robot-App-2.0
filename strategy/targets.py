@@ -47,8 +47,9 @@ def r_multiple(direction: str, entry: float, exit_price: float, stop: float) -> 
     if risk == 0:
         raise ValueError("entry and stop cannot be equal")
 
-    if direction.lower() == "long":
+    normalized = direction.lower()
+    if normalized in {"long", "bullish"}:
         return (float(exit_price) - float(entry)) / risk
-    if direction.lower() == "short":
+    if normalized in {"short", "bearish"}:
         return (float(entry) - float(exit_price)) / risk
-    raise ValueError("direction must be 'long' or 'short'")
+    raise ValueError("direction must be 'long', 'short', 'bullish', or 'bearish'")
