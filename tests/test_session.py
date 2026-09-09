@@ -11,8 +11,8 @@ def bar(ts, o=100, h=101, l=99, c=100.5):
 
 def test_group_by_session_uses_new_york_date():
     bars = [
-        bar("2026-08-03T23:30:00+00:00"),
-        bar("2026-08-04T00:30:00+00:00"),
+        bar("2026-08-04T03:30:00+00:00"),  # 23:30 New York on Aug 3
+        bar("2026-08-04T04:30:00+00:00"),  # 00:30 New York on Aug 4
     ]
     grouped = group_by_session(bars)
     assert list(grouped) == [date(2026, 8, 3), date(2026, 8, 4)]
