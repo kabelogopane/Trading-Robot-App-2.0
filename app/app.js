@@ -28,6 +28,33 @@ function renderTrades(trades = []) {
   </tr>`).join("");
 }
 
+function renderSessionState(bars = []) {
+  const reference = bars.filter(b => {
+    const d = new Date(b.timestamp);
+    const ny = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
+    return ny >= "08:45" && ny < "09:45";
+  });
+  if (reference.length) {
+    $("anchorHigh").textContent = num(Math.max(...reference.map(b => Number(b.high))));
+    $("anchorLow").textContent = num(Math.min(...reference.map(b => Number(b.low))));
+    $("referenceState").textContent = "Captured";
+  } else {
+    $("referenceState").textContent = "No 08:45 data";
+  }
+
+  const anchor = bars.find(b => {
+    const d = new Date(b.timestamp);
+    return new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hour12: false }).format(d) === "09:45";
+  });
+  $("anchorState").textContent = anchor ? "Detected" : "Waiting";
+  if (bars.length) {
+    const last = bars[bars.length - 1];
+    const time = new Date(last.timestamp);
+    const label = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hour12: false }).format(time);
+    $("windowState").textContent = label;
+  }
+}
+
 function renderSetup(trades = []) {
   const last = trades[trades.length - 1];
   if (!last) return;
@@ -51,6 +78,7 @@ async function runBacktest() {
     renderSummary(data.summary);
     renderTrades(data.trades);
     renderSetup(data.trades);
+    renderSessionState(data.bars || []);
     $("dataSource").textContent = "BACKTEST COMPLETE";
     $("chartMode").textContent = "PAPER DATA";
     $("modelState").textContent = "READY";
@@ -81,13 +109,10 @@ function drawChart(bars) {
   const rect = canvas.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
   canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
-  const ctx = canvas.getContext("2d"); ctx.scale(dpr, dpr);
+  const ctx = canvas.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const w = rect.width, h = rect.height;
   ctx.clearRect(0, 0, w, h);
-  if (!bars.length) {
-    drawSampleChart(ctx, w, h);
-    return;
-  }
+  if (!bars.length) return drawSampleChart(ctx, w, h);
   const values = bars.map(b => Number(b.close)).filter(Number.isFinite);
   const min = Math.min(...values), max = Math.max(...values), pad = 25;
   const x = i => pad + (i / Math.max(values.length - 1, 1)) * (w - pad * 2);
@@ -112,7 +137,17 @@ function drawSampleChart(ctx, w, h) {
 }
 
 runButton.addEventListener("click", runBacktest);
-window.addEventListener("resize", () => drawSampleChart($("priceChart").getContext("2d"), $("priceChart").clientWidth, $("priceChart").clientHeight));
-setInterval(() => { $("clock").textContent = new Intl.DateTimeFormat("en-US", { timeZone:"America/New_York", hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false }).format(new Date()); }, 1000);
+window.addEventListener("resize", () => {
+  const canvas = $("priceChart");
+  if (canvas) drawChart([], canvas.clientWidth, canvas.clientHeight);
+});
+setInterval(() => {
+  $("clock").textContent = new Intl.DateTimeFormat("en-US", { timeZone:"America/New_York", hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false }).format(new Date());
+}, 1000);
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("/service-worker.js").catch(() => {}));
+}
+
 checkHealth();
-setTimeout(() => drawSampleChart($("priceChart").getContext("2d"), $("priceChart").clientWidth, $("priceChart").clientHeight), 50);
+setTimeout(() => drawChart([]), 50);
