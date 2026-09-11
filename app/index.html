@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Trading Robot App 2.0 — 45-minute time-anchor research and paper-simulation dashboard.">
+  <meta name="theme-color" content="#0b1220">
+  <link rel="manifest" href="/manifest.json">
   <title>Trading Robot App 2.0</title>
   <link rel="stylesheet" href="/style.css">
 </head>
@@ -21,10 +23,7 @@
   </header>
 
   <main class="container">
-    <section class="warning">
-      <strong>Paper simulation only.</strong>
-      No real-money orders are placed. Results are historical/research outputs and do not guarantee future performance.
-    </section>
+    <section class="warning"><strong>Paper simulation only.</strong> No real-money orders are placed. Results are historical/research outputs and do not guarantee future performance.</section>
 
     <section class="control-grid">
       <div class="panel controls">
@@ -36,64 +35,24 @@
           <button id="runButton">Run paper backtest</button>
         </div>
       </div>
-
       <div class="panel anchor-card">
         <div class="section-title"><div><p class="eyebrow">NEW YORK TIME</p><h2>09:45 MAIN ANCHOR</h2></div><span class="clock" id="clock">--:--:--</span></div>
         <div class="anchor-levels"><div><span>Anchor High</span><b id="anchorHigh">—</b></div><div><span>Anchor Low</span><b id="anchorLow">—</b></div></div>
       </div>
     </section>
 
-    <section class="stats" id="summaryCards">
-      <article><span>Trades</span><strong id="trades">—</strong><small>qualified setups</small></article>
-      <article><span>Win rate</span><strong id="winRate">—</strong><small>paper results</small></article>
-      <article><span>Net R</span><strong id="netR">—</strong><small>cumulative return in R</small></article>
-      <article><span>Max drawdown</span><strong id="drawdown">—</strong><small>peak-to-trough R</small></article>
-    </section>
+    <section class="stats"><article><span>Trades</span><strong id="trades">—</strong><small>qualified setups</small></article><article><span>Win rate</span><strong id="winRate">—</strong><small>paper results</small></article><article><span>Net R</span><strong id="netR">—</strong><small>cumulative return in R</small></article><article><span>Max drawdown</span><strong id="drawdown">—</strong><small>peak-to-trough R</small></article></section>
 
-    <section class="panel">
-      <div class="section-title"><div><p class="eyebrow">TIME FRAMEWORK</p><h2>45-minute windows</h2><p>Time decides <b>WHEN</b> to analyze. Price decides <b>WHAT</b> to do. Liquidity decides <b>WHERE</b> to study the reaction.</p></div></div>
-      <div class="timeline" id="timeline">
-        <div class="anchor-window active"><b>09:45</b><span>MAIN ANCHOR</span></div>
-        <div><b>10:30</b><span>WINDOW 1</span></div><div><b>11:15</b><span>WINDOW 2</span></div>
-        <div><b>12:00</b><span>WINDOW 3</span></div><div><b>12:45</b><span>WINDOW 4</span></div>
-        <div><b>13:30</b><span>WINDOW 5</span></div><div><b>14:15</b><span>WINDOW 6</span></div>
-        <div><b>15:00</b><span>WINDOW 7</span></div><div><b>15:45</b><span>WINDOW 8 END</span></div>
-      </div>
-    </section>
+    <section class="panel"><div class="section-title"><div><p class="eyebrow">TIME FRAMEWORK</p><h2>45-minute windows</h2><p>Time decides <b>WHEN</b> to analyze. Price decides <b>WHAT</b> to do. Liquidity decides <b>WHERE</b> to study the reaction.</p></div></div><div class="timeline" id="timeline"><div class="anchor-window active"><b>09:45</b><span>MAIN ANCHOR</span></div><div><b>10:30</b><span>WINDOW 1</span></div><div><b>11:15</b><span>WINDOW 2</span></div><div><b>12:00</b><span>WINDOW 3</span></div><div><b>12:45</b><span>WINDOW 4</span></div><div><b>13:30</b><span>WINDOW 5</span></div><div><b>14:15</b><span>WINDOW 6</span></div><div><b>15:00</b><span>WINDOW 7</span></div><div><b>15:45</b><span>WINDOW 8 END</span></div></div></section>
 
     <section class="dashboard-grid">
-      <div class="panel chart-panel">
-        <div class="section-title"><div><p class="eyebrow">PRICE DELIVERY</p><h2>US500 session chart</h2></div><span class="badge neutral" id="chartMode">SAMPLE DATA</span></div>
-        <div class="chart-wrap"><canvas id="priceChart" aria-label="US500 sample price chart"></canvas></div>
-        <div class="legend"><span><i class="line anchor-line"></i>09:45 anchor</span><span><i class="line window-line"></i>45m boundaries</span><span><i class="dot liquidity-dot"></i>liquidity</span></div>
-      </div>
-
-      <div class="panel setup-panel">
-        <div class="section-title"><div><p class="eyebrow">3-MIN EXECUTION</p><h2>Setup state</h2></div></div>
-        <div class="setup-state"><span>Direction</span><b id="direction">NEUTRAL</b></div>
-        <div class="setup-state"><span>Liquidity</span><b id="liquidity">WAITING</b></div>
-        <div class="setup-state"><span>Displacement</span><b id="displacement">WAITING</b></div>
-        <div class="setup-state"><span>Structure</span><b id="structure">NEUTRAL</b></div>
-        <div class="setup-state"><span>Entry</span><b id="entry">—</b></div>
-        <div class="setup-state"><span>Invalidation</span><b id="stop">—</b></div>
-        <div class="setup-state"><span>Target</span><b id="target">—</b></div>
-        <div class="qualification" id="qualification">No qualified setup</div>
-      </div>
+      <div class="panel chart-panel"><div class="section-title"><div><p class="eyebrow">PRICE DELIVERY</p><h2>US500 session chart</h2></div><span class="badge neutral" id="chartMode">SAMPLE DATA</span></div><div class="chart-wrap"><canvas id="priceChart" aria-label="US500 sample price chart"></canvas></div><div class="legend"><span><i class="line anchor-line"></i>09:45 anchor</span><span><i class="line window-line"></i>45m boundaries</span><span><i class="dot liquidity-dot"></i>liquidity</span></div></div>
+      <div class="panel setup-panel"><div class="section-title"><div><p class="eyebrow">3-MIN EXECUTION</p><h2>Setup state</h2></div></div><div class="setup-state"><span>Direction</span><b id="direction">NEUTRAL</b></div><div class="setup-state"><span>Liquidity</span><b id="liquidity">WAITING</b></div><div class="setup-state"><span>Displacement</span><b id="displacement">WAITING</b></div><div class="setup-state"><span>Structure</span><b id="structure">NEUTRAL</b></div><div class="setup-state"><span>Entry</span><b id="entry">—</b></div><div class="setup-state"><span>Invalidation</span><b id="stop">—</b></div><div class="setup-state"><span>Target</span><b id="target">—</b></div><div class="qualification" id="qualification">No qualified setup</div></div>
     </section>
 
-    <section class="panel">
-      <div class="section-title"><div><p class="eyebrow">BACKTEST RESULTS</p><h2>Trade journal</h2></div><span class="badge neutral" id="dataSource">Sample CSV</span></div>
-      <div class="table-wrap">
-        <table><thead><tr><th>Date</th><th>Window</th><th>Direction</th><th>Entry</th><th>Stop</th><th>Target</th><th>Outcome</th><th>R</th></tr></thead>
-        <tbody id="tradeBody"><tr><td colspan="8">Run the paper backtest to load trades.</td></tr></tbody></table>
-      </div>
-    </section>
+    <section class="panel"><div class="section-title"><div><p class="eyebrow">BACKTEST RESULTS</p><h2>Trade journal</h2></div><span class="badge neutral" id="dataSource">Sample CSV</span></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Window</th><th>Direction</th><th>Entry</th><th>Stop</th><th>Target</th><th>Outcome</th><th>R</th></tr></thead><tbody id="tradeBody"><tr><td colspan="8">Run the paper backtest to load trades.</td></tr></tbody></table></div></section>
 
-    <section class="panel how-it-works">
-      <div><p class="eyebrow">ROBOT LOGIC</p><h2>How the model works</h2></div>
-      <div class="steps"><div><b>01</b><span>Time anchor</span><p>Find the 09:45 New York anchor and build the 45-minute framework.</p></div><div><b>02</b><span>Price reaction</span><p>Measure OHLC, range and direction after the anchor.</p></div><div><b>03</b><span>Confirmation</span><p>Use liquidity, displacement and structure as supporting evidence.</p></div><div><b>04</b><span>Paper trade</span><p>Define entry, invalidation and target, then evaluate bar-by-bar in R.</p></div></div>
-    </section>
-
+    <section class="panel how-it-works"><div><p class="eyebrow">ROBOT LOGIC</p><h2>How the model works</h2></div><div class="steps"><div><b>01</b><span>Time anchor</span><p>Find the 09:45 New York anchor and build the 45-minute framework.</p></div><div><b>02</b><span>Price reaction</span><p>Measure OHLC, range and direction after the anchor.</p></div><div><b>03</b><span>Confirmation</span><p>Use liquidity, displacement and structure as supporting evidence.</p></div><div><b>04</b><span>Paper trade</span><p>Define entry, invalidation and target, then evaluate bar-by-bar in R.</p></div></div></section>
     <footer>Trading Robot App 2.0 · Research and education only · <span>No live trading or broker execution</span></footer>
   </main>
   <script src="/app.js"></script>
