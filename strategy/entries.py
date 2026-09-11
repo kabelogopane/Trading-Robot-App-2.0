@@ -29,10 +29,10 @@ def qualify_entry(
     displacement_confirmed: bool | None = None,
     buffer: float | None = None,
 ) -> EntrySignal:
-    """Qualify a simulated entry using time-model state plus confirmation.
+    """Create a paper-only entry after all required confirmations agree.
 
-    Accepts the structured market-state objects used by the backtest engine.
-    No broker or real-money order is created by this function.
+    The 09:45 time anchor never chooses direction. Direction must be supported
+    by lower-timeframe structure, displacement and a liquidity reaction.
     """
     direction = direction.lower()
     if direction not in {"bullish", "bearish"}:
@@ -66,10 +66,11 @@ def qualify_entry(
 
     entry = float(current_price)
     effective_buffer = float(buffer if buffer is not None else invalidation_buffer)
-    if direction == "bullish":
-        invalidation = float(anchor_low) - effective_buffer
-    else:
-        invalidation = float(anchor_high) + effective_buffer
+    invalidation = (
+        float(anchor_low) - effective_buffer
+        if direction == "bullish"
+        else float(anchor_high) + effective_buffer
+    )
 
     if (direction == "bullish" and invalidation >= entry) or (
         direction == "bearish" and invalidation <= entry
