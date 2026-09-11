@@ -1,0 +1,10 @@
+{
+  "name": "Trading Robot App 2.0",
+  "short_name": "Trading Robot",
+  "description": "45-minute time-anchor research and paper-simulation dashboard.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
+  "icons": []
+}
