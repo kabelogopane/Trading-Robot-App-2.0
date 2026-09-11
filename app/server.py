@@ -39,6 +39,16 @@ def javascript() -> FileResponse:
     return FileResponse(BASE_DIR / "app.js", media_type="application/javascript")
 
 
+@app.get("/manifest.json")
+def manifest() -> FileResponse:
+    return FileResponse(BASE_DIR / "manifest.json", media_type="application/manifest+json")
+
+
+@app.get("/service-worker.js")
+def service_worker() -> FileResponse:
+    return FileResponse(BASE_DIR / "service-worker.js", media_type="application/javascript")
+
+
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "mode": "research_paper_simulation"}
