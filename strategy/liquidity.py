@@ -1,4 +1,4 @@
-"""Liquidity-level measurements used as supporting evidence only."""
+"""Liquidity measurements used as supporting evidence only."""
 
 from __future__ import annotations
 
@@ -15,34 +15,31 @@ class LiquidityLevels:
 
 
 def detect_liquidity(bars: Sequence[dict], tolerance: float = 0.0) -> LiquidityLevels:
-    """Find simple prior and equal high/low liquidity references."""
+    """Find prior and equal high/low references from already-known bars."""
     if not bars:
         return LiquidityLevels(None, None, None, None)
-
     highs = [float(b["high"]) for b in bars]
     lows = [float(b["low"]) for b in bars]
-    prior_high = max(highs)
-    prior_low = min(lows)
-
-    equal_high = None
-    equal_low = None
-    for i, value in enumerate(highs):
-        if any(i != j and abs(value - other) <= tolerance for j, other in enumerate(highs)):
-            equal_high = value
-            break
-    for i, value in enumerate(lows):
-        if any(i != j and abs(value - other) <= tolerance for j, other in enumerate(lows)):
-            equal_low = value
-            break
-
-    return LiquidityLevels(prior_high, prior_low, equal_high, equal_low)
+    equal_high = next((v for i, v in enumerate(highs) if any(i != j and abs(v - x) <= tolerance for j, x in enumerate(highs))), None)
+    equal_low = next((v for i, v in enumerate(lows) if any(i != j and abs(v - x) <= tolerance for j, x in enumerate(lows))), None)
+    return LiquidityLevels(max(highs), min(lows), equal_high, equal_low)
 
 
 def swept_high(bar: dict, level: float) -> bool:
-    """True when a bar trades above a reference high."""
-    return float(bar["high"]) > level
+    """True when the bar trades above a reference high."""
+    return float(bar["high"]) > float(level)
 
 
 def swept_low(bar: dict, level: float) -> bool:
-    """True when a bar trades below a reference low."""
-    return float(bar["low"]) < level
+    """True when the bar trades below a reference low."""
+    return float(bar["low"]) < float(level)
+
+
+def sweep_and_reject_high(bar: dict, level: float) -> bool:
+    """Measure a buy-side sweep that closes back at/below the level."""
+    return swept_high(bar, level) and float(bar["close"]) <= float(level)
+
+
+def sweep_and_reject_low(bar: dict, level: float) -> bool:
+    """Measure a sell-side sweep that closes back at/above the level."""
+    return swept_low(bar, level) and float(bar["close"]) >= float(level)
