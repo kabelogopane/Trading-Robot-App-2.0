@@ -38,3 +38,13 @@ def test_execution_state_endpoint():
     assert data["anchor"]=="09:45 MAIN"
     assert data["execution_timeframe"]=="3m"
     assert data["reference_high"]>data["reference_low"]
+
+def test_historical_data_endpoint():
+    response=client.get("/api/historical-data")
+    assert response.status_code==200
+    data=response.json()
+    assert data["status"]=="ready"
+    assert data["timezone"]=="America/New_York"
+    assert data["model_hours"]=="08:45-15:45"
+    assert data["total"]["rows"]>20
+    assert data["model_period"]["rows"]>0
