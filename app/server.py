@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse
 
 from backtest.engine import BacktestConfig, run_backtest
 from backtest.performance import calculate_performance
+from data.historical import filter_model_hours, load_historical_csv, summarize_historical_data
 from data.loader import dataframe_to_bars, load_csv
 from strategy.execution import find_3m_confirmation
 from strategy.targets import calculate_levels
@@ -174,6 +175,24 @@ def execution_state(
             else None
         ),
         "reason": confirmation.reason,
+    }
+
+
+@app.get("/api/historical-data")
+def historical_data():
+    """Return metadata for the historical dataset used by the research engine."""
+    frame = load_historical_csv(DATA_FILE)
+    model_frame = filter_model_hours(frame)
+    summary = summarize_historical_data(frame)
+    model_summary = summarize_historical_data(model_frame)
+    return {
+        "status": "ready" if not frame.empty else "empty",
+        "instrument": "US500.F",
+        "timezone": "America/New_York",
+        "source": "repository_sample_csv",
+        "model_hours": "08:45-15:45",
+        "total": summary.__dict__,
+        "model_period": model_summary.__dict__,
     }
 
 
