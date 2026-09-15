@@ -47,8 +47,8 @@ function renderExecutionState(state = {}) {
   setText("al", num(state.reference_low));
   setText("direction", (state.direction || "neutral").toUpperCase());
   setText("liq", state.sweep_type ? state.sweep_type.replaceAll("_", " ").toUpperCase() : "WAITING");
-  setText("disp", state.status === "qualified" ? "CONFIRMED" : "WAITING");
-  setText("struct", state.status === "qualified" ? (state.direction || "neutral").toUpperCase() : "NEUTRAL");
+  setText("disp", state.displacement == null ? "WAITING" : `CONFIRMED ${num(state.displacement, 2)}x`);
+  setText("struct", state.structure ? state.structure.toUpperCase() : "NEUTRAL");
   setText("entry", state.entry == null ? "—" : num(state.entry));
   setText("stop", state.invalidation == null ? "—" : num(state.invalidation));
   setText("target", state.target == null ? "—" : num(state.target));
@@ -58,6 +58,24 @@ function renderExecutionState(state = {}) {
 function parseTime(value) {
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function nyParts(date) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  return {
+    hour: Number(parts.find((v) => v.type === "hour")?.value),
+    minute: Number(parts.find((v) => v.type === "minute")?.value),
+  };
+}
+
+function minutesFromMidnight(date) {
+  const { hour, minute } = nyParts(date);
+  return hour * 60 + minute;
 }
 
 function renderChart(bars = [], state = {}) {
@@ -74,31 +92,63 @@ function renderChart(bars = [], state = {}) {
   const height = 350;
   const padX = 25;
   const padY = 25;
-  const min = Math.min(...points.map((p) => p.close), Number(state.reference_low || Infinity));
-  const max = Math.max(...points.map((p) => p.close), Number(state.reference_high || -Infinity));
+  const prices = points.map((p) => p.close);
+  [state.reference_low, state.reference_high, state.entry, state.invalidation, state.target]
+    .forEach((v) => { if (v != null && Number.isFinite(Number(v))) prices.push(Number(v)); });
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
   const range = Math.max(max - min, 0.000001);
   const x = (i) => padX + (i / (points.length - 1)) * (width - padX * 2);
   const y = (price) => height - padY - ((price - min) / range) * (height - padY * 2);
   const path = points.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(p.close).toFixed(1)}`).join(" ");
 
-  const anchorIndex = points.findIndex((p) => {
-    const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(p.time);
-    const h = Number(parts.find((v) => v.type === "hour")?.value);
-    const m = Number(parts.find((v) => v.type === "minute")?.value);
-    return h === 9 && m === 45;
-  });
-  const anchorX = anchorIndex >= 0 ? x(anchorIndex) : null;
+  const firstMinutes = minutesFromMidnight(points[0].time);
+  const lastMinutes = minutesFromMidnight(points[points.length - 1].time);
+  const totalMinutes = Math.max(lastMinutes - firstMinutes, 1);
+  const xForMinutes = (minutes) => padX + ((minutes - firstMinutes) / totalMinutes) * (width - padX * 2);
+
+  const windowStarts = [
+    [585, "09:45"],
+    [630, "10:30"],
+    [675, "11:15"],
+    [720, "12:00"],
+    [765, "12:45"],
+    [810, "13:30"],
+    [855, "14:15"],
+    [900, "15:00"],
+    [945, "15:45"],
+  ];
+  const boundaryLines = windowStarts
+    .filter(([minutes]) => minutes >= firstMinutes && minutes <= lastMinutes)
+    .map(([minutes, label]) => {
+      const bx = xForMinutes(minutes);
+      return `<path d="M${bx.toFixed(1)} 20V330" stroke="#6f86a1" stroke-width="1" stroke-dasharray="3 6"/><text x="${Math.min(bx + 5, 925).toFixed(1)}" y="318" fill="#91a4bd" font-size="10">${label}</text>`;
+    }).join("");
+
+  const anchorMinutes = 585;
+  const anchorX = anchorMinutes >= firstMinutes && anchorMinutes <= lastMinutes ? xForMinutes(anchorMinutes) : null;
   const highY = Number.isFinite(Number(state.reference_high)) ? y(Number(state.reference_high)) : null;
   const lowY = Number.isFinite(Number(state.reference_low)) ? y(Number(state.reference_low)) : null;
+  const entryY = Number.isFinite(Number(state.entry)) ? y(Number(state.entry)) : null;
+  const stopY = Number.isFinite(Number(state.invalidation)) ? y(Number(state.invalidation)) : null;
+  const targetY = Number.isFinite(Number(state.target)) ? y(Number(state.target)) : null;
+  const confirmationX = state.confirmation_time
+    ? xForMinutes(minutesFromMidnight(parseTime(state.confirmation_time)))
+    : null;
 
   chart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
     <g stroke="#1c314a" stroke-width="1">
       <path d="M0 60H1000"/><path d="M0 130H1000"/><path d="M0 200H1000"/><path d="M0 270H1000"/>
     </g>
+    ${boundaryLines}
     <path d="${path}" fill="none" stroke="#49a6ff" stroke-width="3"/>
     ${highY == null ? "" : `<path d="M0 ${highY}H1000" stroke="#49d39a" stroke-width="1" stroke-dasharray="5 5"/><text x="15" y="${Math.max(15, highY - 6)}" fill="#91a4bd" font-size="12">08:45 high</text>`}
     ${lowY == null ? "" : `<path d="M0 ${lowY}H1000" stroke="#49d39a" stroke-width="1" stroke-dasharray="5 5"/><text x="15" y="${Math.min(340, lowY + 14)}" fill="#91a4bd" font-size="12">08:45 low</text>`}
     ${anchorX == null ? "" : `<path d="M${anchorX} 20V330" stroke="#f1bd62" stroke-width="2" stroke-dasharray="7 7"/><text x="${Math.min(anchorX + 10, 900)}" y="35" fill="#f1bd62" font-size="14">09:45 MAIN</text>`}
+    ${confirmationX == null ? "" : `<path d="M${confirmationX.toFixed(1)} 20V330" stroke="#b58cff" stroke-width="2" stroke-dasharray="4 4"/><text x="${Math.min(confirmationX + 8, 900).toFixed(1)}" y="55" fill="#b58cff" font-size="12">3m confirmation</text>`}
+    ${entryY == null ? "" : `<path d="M0 ${entryY}H1000" stroke="#49a6ff" stroke-width="2"/><text x="15" y="${Math.max(15, entryY - 6)}" fill="#49a6ff" font-size="11">ENTRY</text>`}
+    ${stopY == null ? "" : `<path d="M0 ${stopY}H1000" stroke="#ff7272" stroke-width="2" stroke-dasharray="6 4"/><text x="15" y="${Math.min(340, stopY + 14)}" fill="#ff7272" font-size="11">INVALIDATION</text>`}
+    ${targetY == null ? "" : `<path d="M0 ${targetY}H1000" stroke="#49d39a" stroke-width="2"/><text x="15" y="${Math.max(15, targetY - 6)}" fill="#49d39a" font-size="11">TARGET</text>`}
   </svg>`;
 }
 
@@ -131,7 +181,7 @@ async function runPaperSimulation() {
     renderSummary(data.summary);
     renderTrades(data.trades);
 
-    const stateResponse = await fetch(`${API}/api/execution-state`);
+    const stateResponse = await fetch(`${API}/api/execution-state?risk_reward=${encodeURIComponent(rr)}`);
     let state = {};
     if (stateResponse.ok) {
       state = await stateResponse.json();
