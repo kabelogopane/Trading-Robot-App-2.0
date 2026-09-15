@@ -32,6 +32,16 @@ def health(): return {"status":"ok", "mode":"research_paper_simulation"}
 
 def _bars(): return dataframe_to_bars(load_csv(DATA_FILE))
 
+def _bar_timestamp(value: datetime | str) -> datetime:
+    """Return a bar timestamp as a New York-aware datetime.
+
+    The CSV loader already converts timestamps to Python datetime objects, but
+    this helper also accepts ISO strings for API/test compatibility.
+    """
+    if isinstance(value, str):
+        value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return ensure_new_york(value)
+
 @app.get("/api/backtest")
 def backtest(risk_percent: float = Query(1.0, gt=0, le=2), risk_reward: float = Query(2.0, gt=0, le=10)):
     bars = _bars(); trades = run_backtest(bars, BacktestConfig(risk_reward=risk_reward, execution_timeframe="3m"))
@@ -40,9 +50,7 @@ def backtest(risk_percent: float = Query(1.0, gt=0, le=2), risk_reward: float = 
 @app.get("/api/execution-state")
 def execution_state():
     bars = _bars()
-    pairs=[]
-    for b in bars:
-        ts=ensure_new_york(datetime.fromisoformat(b["timestamp"].replace("Z","+00:00"))); pairs.append((b,ts))
+    pairs=[(b, _bar_timestamp(b["timestamp"])) for b in bars]
     pre=[b for b,ts in pairs if (ts.hour==8) or (ts.hour==9 and ts.minute<45)]
     anchor=[b for b,ts in pairs if ts.hour==9 and ts.minute==45]
     if not pre or not anchor: return {"status":"waiting","reason":"Waiting for 09:45 anchor data"}
