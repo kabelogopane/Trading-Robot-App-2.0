@@ -16,6 +16,7 @@ from backtest.engine import BacktestConfig, run_backtest
 from backtest.performance import calculate_performance
 from data.loader import dataframe_to_bars, load_csv
 from strategy.execution import find_3m_confirmation
+from strategy.targets import calculate_levels
 from strategy.time_windows import ensure_new_york
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -27,8 +28,6 @@ app = FastAPI(
     version="2.0.0",
 )
 
-# GitHub Pages and local development origins. A deployed frontend origin can be
-# supplied with FRONTEND_ORIGIN, e.g. https://kabelogopane.github.io.
 allowed_origins = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
@@ -112,7 +111,9 @@ def backtest(
 
 
 @app.get("/api/execution-state")
-def execution_state():
+def execution_state(
+    risk_reward: float = Query(2.0, gt=0, le=10),
+):
     bars = _bars()
     pairs = [(b, _bar_timestamp(b["timestamp"])) for b in bars]
     pre = [b for b, ts in pairs if (ts.hour == 8) or (ts.hour == 9 and ts.minute < 45)]
@@ -127,6 +128,23 @@ def execution_state():
         reference_high=high,
         reference_low=low,
     )
+
+    entry = invalidation = target = None
+    risk_per_unit = None
+    if confirmation.qualified and confirmation.confirmation_time is not None:
+        entry_bar = next(
+            (b for b in bars if _bar_timestamp(b["timestamp"]) == confirmation.confirmation_time),
+            None,
+        )
+        if entry_bar is not None:
+            entry = float(entry_bar["close"])
+            invalidation = low if confirmation.direction == "bullish" else high
+            levels = calculate_levels(entry, invalidation, risk_reward)
+            entry = levels.entry
+            invalidation = levels.stop
+            target = levels.target
+            risk_per_unit = levels.risk_per_unit
+
     return {
         "status": "qualified" if confirmation.qualified else "waiting",
         "anchor": "09:45 MAIN",
@@ -138,6 +156,21 @@ def execution_state():
         "confirmation_time": (
             confirmation.confirmation_time.isoformat()
             if confirmation.confirmation_time
+            else None
+        ),
+        "entry": entry,
+        "invalidation": invalidation,
+        "target": target,
+        "risk_per_unit": risk_per_unit,
+        "risk_reward": risk_reward,
+        "displacement": (
+            confirmation.displacement.relative_strength
+            if confirmation.displacement is not None
+            else None
+        ),
+        "structure": (
+            confirmation.structure.classification
+            if confirmation.structure is not None
             else None
         ),
         "reason": confirmation.reason,
