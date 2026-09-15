@@ -16,6 +16,7 @@ from backtest.engine import BacktestConfig, run_backtest
 from backtest.performance import calculate_performance
 from data.historical import filter_model_hours, load_historical_csv, summarize_historical_data
 from data.loader import dataframe_to_bars, load_csv
+from data.public_web import fetch_public_3m_data
 from data.quality import assess_quality
 from strategy.execution import find_3m_confirmation
 from strategy.targets import calculate_levels
@@ -85,14 +86,25 @@ def _dataset_path(dataset: str) -> Path:
         return DATA_FILE
     if normalized == "historical":
         return HISTORICAL_FILE
-    raise ValueError("dataset must be 'sample' or 'historical'")
+    raise ValueError("dataset must be 'sample', 'historical', or 'web'")
 
 
 def _bars(dataset: str = "sample"):
+    if dataset.lower() == "web":
+        return dataframe_to_bars(fetch_public_3m_data())
     path = _dataset_path(dataset)
     if not path.exists():
         raise FileNotFoundError(f"Dataset is not available: {path.name}")
     return dataframe_to_bars(load_csv(path))
+
+
+def _frame(dataset: str):
+    if dataset.lower() == "web":
+        return fetch_public_3m_data()
+    path = _dataset_path(dataset)
+    if not path.exists():
+        raise FileNotFoundError(f"Dataset is not available: {path.name}")
+    return load_csv(path)
 
 
 def _bar_timestamp(value: datetime | str) -> datetime:
@@ -108,17 +120,18 @@ def datasets():
         "datasets": [
             {"id": "sample", "name": "Repository sample", "available": DATA_FILE.exists()},
             {"id": "historical", "name": "MT5 US500 history", "available": HISTORICAL_FILE.exists()},
+            {"id": "web", "name": "Public web S&P 500 proxy", "available": True, "instrument": "^GSPC"},
         ]
     }
 
 
 @app.get("/api/data-quality")
 def data_quality(dataset: str = Query("sample")):
-    """Return quality checks before historical data is used for research."""
-    path = _dataset_path(dataset)
-    if not path.exists():
-        return {"dataset": dataset, "status": "unavailable", "reason": f"Missing {path.name}"}
-    frame = load_csv(path)
+    """Return quality checks before data is used for paper research."""
+    try:
+        frame = _frame(dataset)
+    except Exception as exc:
+        return {"dataset": dataset, "status": "unavailable", "reason": str(exc)}
     report = assess_quality(frame, expected_timeframe_minutes=3)
     return {"dataset": dataset, "status": "passed" if report.passed else "review", "report": report.__dict__}
 
@@ -176,7 +189,7 @@ def execution_state(risk_reward: float = Query(2.0, gt=0, le=10), dataset: str =
 
 @app.get("/api/historical-data")
 def historical_data():
-    """Return metadata for the historical dataset used by the research engine."""
+    """Return metadata for the repository historical dataset."""
     frame = load_historical_csv(DATA_FILE)
     model_frame = filter_model_hours(frame)
     summary = summarize_historical_data(frame)
